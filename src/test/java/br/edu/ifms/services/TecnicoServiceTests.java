@@ -13,10 +13,12 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import br.edu.ifms.dto.TecnicoDTO;
 import br.edu.ifms.entities.Tecnico;
 import br.edu.ifms.repositories.TecnicoRepository;
 import br.edu.ifms.services.exceptions.DataBaseException;
@@ -67,6 +69,9 @@ public class TecnicoServiceTests {
 		 * 	- Salvar dados
 		 */
 		Mockito.when(repository.save(ArgumentMatchers.any())).thenReturn(tecnico);
+
+		Mockito.when(repository.getReferenceById(idExistente)).thenReturn(tecnico); // Se exitir o ID retorna um tecnico
+		Mockito.when(repository.getReferenceById(idInexistente)).thenThrow(ResourceNotFoundException.class); // Se o ID não existir retorna a Exception
 	}
 
 	@Test
@@ -102,6 +107,71 @@ public class TecnicoServiceTests {
 		});
 	}
 
+	/**
+	 * Teste se vai retornar uma lista paginada
+	 */
+	@Test
+	public void findAllPagedDeveriaRetornarPagina(){
+		Pageable pageable = Pageable.ofSize(10);
+
+		Page<TecnicoDTO> pagina = service.findAllPaged(pageable);
+		Assertions.assertNotNull(pagina);
+	}
+
+	/**
+	 * Teste se metodo findById vai retornar um objeto quando o ID existir
+	 */
+	@Test
+	public void findByIdDeveriaRetornarObjetoQuandoIdExistente(){
+		TecnicoDTO dto = service.findById(idExistente);
+		Assertions.assertNotNull(dto);
+	}
+
+	/*
+	 * Teste se findById vai lançar ResourceNotFoundException quando id nao existir
+	 */
+	@Test
+	public void findByIdDeveriaLancarResourceNotFoundExceptionQuandoIdInexitente() {
+
+		Assertions.assertThrows(ResourceNotFoundException.class, ()->{
+			service.delete(idInexistente);
+		});
+	}
+
+	/**
+	 * Teste se vai fazer o insert
+	 */
+	@Test
+	public void insertDeveriaSalvarQuandoIdNulo(){
+		TecnicoDTO dto = Factory.createTecnicoDTO();
+		dto.setId(null);
+
+		dto = service.insert(dto);
+		Assertions.assertNotNull(dto);
+	}
+
+	/**
+	 * Teste se vai fazer o update quando o ID Existir
+	 */
+	@Test
+	public void updateDeveriaAtualizarQuandoIdExistente(){
+		TecnicoDTO dto = Factory.createTecnicoDTO();
+
+		dto = service.update(idExistente, dto);
+		Assertions.assertNotNull(dto);
+	}
+
+	/*
+	 * Teste se update vai lançar ResourceNotFoundException quando id não existir
+	 */
+	@Test
+	public void updateDeveriaLancarResourceNotFoundExceptionQuandoIdInexitente() {
+		TecnicoDTO dto = Factory.createTecnicoDTO();
+
+		Assertions.assertThrows(ResourceNotFoundException.class, ()->{
+			service.update(idInexistente, dto);
+		});
+	}
 
 }
 
